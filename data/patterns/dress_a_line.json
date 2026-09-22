@@ -1,0 +1,39 @@
+{
+  "name": "A-Line Dress",
+  "category": "dress",
+  "silhouette": "a-line",
+  "base_size": {
+    "bust": 36,
+    "waist": 28,
+    "hips": 40,
+    "length": 40
+  },
+  "pieces": {
+    "front_bodice": {
+      "points": [
+        {"x": 0, "y": 0, "label": "shoulder_neck"},
+        {"x": 7, "y": 0, "label": "shoulder_tip"},
+        {"x": 9, "y": 8, "label": "armhole_top"},
+        {"x": 9, "y": 16, "label": "armhole_bottom"},
+        {"x": 5, "y": 20, "label": "waist_side"},
+        {"x": 8, "y": 40, "label": "hem_side"},
+        {"x": -8, "y": 40, "label": "hem_center"},
+        {"x": -5, "y": 20, "label": "waist_center"},
+        {"x": 0, "y": 0, "label": "neck_center"}
+      ]
+    },
+    "back_bodice": {
+      "points": [
+        {"x": 0, "y": 0, "label": "shoulder_neck"},
+        {"x": 7, "y": 0, "label": "shoulder_tip"},
+        {"x": 9, "y": 8, "label": "armhole_top"},
+        {"x": 9, "y": 16, "label": "armhole_bottom"},
+        {"x": 5, "y": 20, "label": "waist_side"},
+        {"x": 8, "y": 40, "label": "hem_side"},
+        {"x": -8, "y": 40, "label": "hem_center"},
+        {"x": -5, "y": 20, "label": "waist_center"},
+        {"x": 0, "y": 0, "label": "neck_center"}
+      ]
+    }
+  }
+}

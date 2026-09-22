@@ -1,0 +1,35 @@
+{
+  "name": "Basic Shirt",
+  "category": "shirt",
+  "silhouette": "straight",
+  "base_size": {
+    "bust": 36,
+    "waist": 30,
+    "hips": 38,
+    "length": 25
+  },
+  "pieces": {
+    "front": {
+      "points": [
+        {"x": 0, "y": 0, "label": "shoulder_neck"},
+        {"x": 7, "y": 0, "label": "shoulder_tip"},
+        {"x": 10, "y": 7, "label": "armhole_top"},
+        {"x": 10, "y": 15, "label": "armhole_bottom"},
+        {"x": 9, "y": 25, "label": "hem_side"},
+        {"x": -9, "y": 25, "label": "hem_center"},
+        {"x": -9, "y": 0, "label": "neck_center"}
+      ]
+    },
+    "back": {
+      "points": [
+        {"x": 0, "y": 0, "label": "shoulder_neck"},
+        {"x": 7, "y": 0, "label": "shoulder_tip"},
+        {"x": 10, "y": 7, "label": "armhole_top"},
+        {"x": 10, "y": 15, "label": "armhole_bottom"},
+        {"x": 9, "y": 25, "label": "hem_side"},
+        {"x": -9, "y": 25, "label": "hem_center"},
+        {"x": -9, "y": 0, "label": "neck_center"}
+      ]
+    }
+  }
+}

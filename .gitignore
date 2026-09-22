@@ -1,0 +1,50 @@
+﻿# Virtual environments
+venv/
+.venv/
+env/
+
+# Data (too large for Git)
+data/raw/
+data/processed_train/
+data/processed_imaterialist_all/
+data/processed_imaterialist_combined/
+data/processed_imaterialist_train/
+data/processed_neckline_imaterialist/
+data/processed_combined/
+data/features/
+data/features_train/
+data/features_imat_combined/
+data/features_imat_train/
+data/models/
+data/models_train/
+
+# Trained model files
+*.pth
+*.pkl
+
+# Python
+__pycache__/
+*.py[cod]
+*.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Output (regenerated each run)
+output/*.svg
+output/*.png
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+data/processed/
