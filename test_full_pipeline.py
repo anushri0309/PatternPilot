@@ -430,10 +430,11 @@ def main():
     pattern = generator.generate(spec)
 
     import time
-    output_path = f"output/full_pipeline_pattern_{int(time.time())}.svg"
+    output_path = f"output/pattern_{int(time.time())}.svg"
     generator.export_svg(pattern, output_path)
-
     print(f"\n✅ Complete! Open {output_path}")
+
+
 
 
 if __name__ == "__main__":

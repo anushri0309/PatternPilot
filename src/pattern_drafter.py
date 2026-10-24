@@ -1,10 +1,16 @@
 """
 Parametric pattern drafting engine with full measurement metadata.
 Supports: bodice, skirt, sleeve, pants + jeans pieces.
-Pants use absolute thigh/knee/hem widths for proper taper.
 """
 
 import math
+try:
+    from src.geometry_utils import point_on_segment
+except ImportError:
+    try:
+        from geometry_utils import point_on_segment
+    except ImportError:
+        from .geometry_utils import point_on_segment
 
 
 class PatternDrafter:
@@ -56,6 +62,7 @@ class PatternDrafter:
             pieces['back_yoke'] = self.draft_back_yoke()
             pieces['front_fly'] = self.draft_front_fly()
             pieces['pocket_bag'] = self.draft_front_pocket_bag()
+            # No sleeve for pants
 
         elif is_top or is_outerwear:
             pieces['front_bodice'] = self.draft_bodice_front()
@@ -97,73 +104,138 @@ class PatternDrafter:
 
         bust_quarter = bust / 4
         waist_quarter = waist / 4
-        neck_width = 6.5
+        neck_width = 7.0  # Slightly wider for a t-shirt
         shoulder_drop = 4
         armhole_depth = (bust / 10) + 10
 
         neck = self._get_neckline_params()
         neck_depth = neck['depth']
-        neck_type = neck['type']
 
         silhouette = self.spec.get('silhouette', 'fitted').lower()
         if 'fitted' in silhouette or 'bodycon' in silhouette:
             waist_side_x = waist_quarter
-        elif 'loose' in silhouette:
+        elif 'loose' in silhouette or 'oversized' in silhouette:
             waist_side_x = bust_quarter
         else:
             waist_side_x = waist_quarter + 2
 
         garment_type = self.spec.get('garment_type', 'top').lower()
         hem_length = back_length + (35 if 'dress' in garment_type else 15)
-        hem_side_x = waist_side_x + 2
+        if 't-shirt' in garment_type or 'loose' in silhouette:
+            hem_side_x = waist_side_x
+        else:
+            hem_side_x = waist_side_x + 2
 
+        neckline = self.spec.get('neckline', 'round').lower()
+
+        # --- NECKLINE CUSTOMIZATION LOGIC ---
+        if 'halter' in neckline:
+            shoulder_x = neck_width + 1.5
+            armhole_y = armhole_depth + 2
+            neck_corner = (neck_width, 0)
+            neck_drop = (0, neck_depth + 4)
+            neck_ctrl = (neck_width * 0.3, neck_depth * 0.8)
+
+        elif 'v-neck' in neckline or ('v' in neckline and 'scoop' not in neckline):
+            shoulder_x = (shoulder / 2) + 1
+            armhole_y = armhole_depth
+            neck_corner = (neck_width, 0)
+            neck_drop = (0, neck_depth + 6)  # Deep V
+            neck_ctrl = (neck_width * 0.2, neck_depth * 0.5)  # Straight line down
+
+        elif 'square' in neckline:
+            shoulder_x = (shoulder / 2) + 1
+            armhole_y = armhole_depth
+            neck_corner = (neck_width, neck_depth * 0.5)
+            neck_drop = (0, neck_depth * 0.5)
+            neck_ctrl = (neck_width * 0.5, neck_depth * 0.5)
+
+        elif 'scoop' in neckline:
+            shoulder_x = (shoulder / 2) + 1
+            armhole_y = armhole_depth
+            neck_corner = (neck_width + 2, 0)  # Wider
+            neck_drop = (0, neck_depth + 4)  # Deeper
+            neck_ctrl = (neck_width * 0.5, neck_depth * 0.9)
+        elif 'sweetheart' in neckline:
+            shoulder_x = (shoulder / 2) + 1
+            armhole_y = armhole_depth
+            neck_corner = (neck_width, -2)        # Goes UP
+            neck_drop = (0, neck_depth + 2)       # Goes DOWN in center
+            neck_ctrl = (neck_width * 0.3, neck_depth * 0.9)
+        elif 'off-shoulder' in neckline or 'one-shoulder' in neckline:
+            shoulder_x = (shoulder / 2) + 4       # Extends past the shoulder
+            armhole_y = armhole_depth
+            neck_corner = (neck_width + 3, 0)     # Wide across the chest
+            neck_drop = (0, neck_depth)
+            neck_ctrl = (neck_width * 0.6, neck_depth * 0.5)
+        elif 'collared' in neckline:
+            shoulder_x = (shoulder / 2) + 1
+            armhole_y = armhole_depth
+            neck_corner = (neck_width - 1, 0)     # Tight to the neck
+            neck_drop = (0, 2)                    # High in the front
+            neck_ctrl = (neck_width * 0.3, 1)
+        elif 'turtleneck' in neckline:
+            shoulder_x = (shoulder / 2) + 1
+            armhole_y = armhole_depth
+            neck_corner = (neck_width - 1, -2)    # Goes up above the shoulder
+            neck_drop = (0, -2)                   # Goes up above the shoulder
+            neck_ctrl = (neck_width * 0.5, -1)
+        else:  # Round / Crew neck
+            shoulder_x = (shoulder / 2) + 1
+            armhole_y = armhole_depth
+            neck_corner = (neck_width, 0)
+            neck_drop = (0, neck_depth)
+            neck_ctrl = (neck_width * 0.4, neck_depth * 0.8)
+
+        # --- FIXED NECKLINE POINT ORDER ---
         points = [
-            (0, 0), (neck_width, 0), (neck_width + 1, neck_depth),
-            (shoulder / 2 + 1, shoulder_drop), (bust_quarter, armhole_depth),
-            (waist_side_x, back_length), (hem_side_x, hem_length),
-            (0, hem_length), (0, back_length),
+            (0, 0),                                     # 0: CF neck top
+            neck_drop,                                  # 1: Neck drop (dynamic)
+            neck_corner,                                # 2: Side neck (dynamic)
+            (shoulder_x, shoulder_drop),                # 3: Shoulder tip
+            (bust_quarter, armhole_y),                  # 4: Underarm
+            (waist_side_x, back_length),                # 5: Waist
+            (hem_side_x, hem_length),                   # 6: Hem
+            (0, hem_length),                            # 7: CF Hem
+            (0, back_length),                           # 8: CF Waist
         ]
 
-        curves = []
-        if neck_type == 'v':
-            curves.append({'type': 'v_neck', 'start': points[1],
-                           'control': ((points[1][0] + points[2][0]) / 2,
-                                       (points[1][1] + points[2][1]) / 2),
-                           'end': points[2]})
-        else:
-            curves.append({'type': 'round_neck', 'start': points[1],
-                           'control': (neck_width + 0.3, neck_depth * 0.5),
-                           'end': points[2]})
+        curves = [
+            {'type': 'neck_center', 'points': [points[1], neck_ctrl, points[2]]},
+            {'type': 'armhole_s_curve',
+             'points': [points[3],
+                        (bust_quarter - 2, shoulder_drop + 3),
+                        (bust_quarter - 1, armhole_y - 4),
+                        points[4]]}
+        ]
 
-        curves.append({'type': 'neck_center', 'start': points[2],
-                       'control': (neck_width * 0.5, neck_depth * 0.7),
-                       'end': points[0]})
 
-        curves.append({'type': 'armhole_s_curve',
-                       'points': [points[3],
-                                  (points[3][0] + 1, points[3][1] + 3),
-                                  (points[4][0] - 1, (points[3][1] + points[4][1]) / 2),
-                                  points[4]]})
 
-        measurements = {
-            'Neckline width': f"{neck_width:.1f} cm",
-            'Neckline depth': f"{neck_depth:.1f} cm",
-            'Shoulder width': f"{shoulder/2 + 1:.1f} cm",
-            'Armhole depth': f"{armhole_depth - shoulder_drop:.1f} cm",
-            'Bust width (1/4)': f"{bust_quarter:.1f} cm",
-            'Waist width (1/4)': f"{waist_side_x:.1f} cm",
-            'Hem width (1/4)': f"{hem_side_x:.1f} cm",
-            'Side seam length': f"{hem_length - shoulder_drop:.1f} cm",
-        }
+        edge_allowances = [
+            0.0,  # 0->1 CF fold
+            1.0,  # 1->2 Neckline curve
+            1.0,  # 2->3 Neck to shoulder
+            1.0,  # 3->4 Shoulder
+            1.0,  # 4->5 Armhole
+            1.5,  # 5->6 Side seam
+            2.0,  # 6->7 Hem
+            0.0,  # 7->8 CF fold
+            0.0,  # 8->0 CF fold
+        ]
 
         return {
             'name': 'front_bodice',
             'points': points,
             'curves': curves,
             'darts': [],
+            'edge_allowances': edge_allowances,
+            'notches': [
+                {'center': point_on_segment(points[2], points[3], 0.5), 'direction': (0, 1), 'kind': 'single'},
+                {'center': point_on_segment(points[3], points[4], 0.5), 'direction': (-1, 0), 'kind': 'single'},
+            ],
             'grainline': {'start': (bust_quarter * 0.35, armhole_depth + 8),
                           'end': (bust_quarter * 0.35, hem_length - 5)},
-            'measurements': measurements
+            'measurements': {}
         }
 
     def draft_bodice_back(self):
@@ -174,60 +246,158 @@ class PatternDrafter:
 
         bust_quarter = bust / 4
         waist_quarter = waist / 4
-        neck_width = 6.5
+        neck_width = 7.0
         shoulder_drop = 4
         armhole_depth = (bust / 10) + 10
-        back_neck_depth = 2
+        back_neck_depth = 2.5
 
         silhouette = self.spec.get('silhouette', 'fitted').lower()
         if 'fitted' in silhouette or 'bodycon' in silhouette:
             waist_side_x = waist_quarter
-        elif 'loose' in silhouette:
+        elif 'loose' in silhouette or 'oversized' in silhouette:
             waist_side_x = bust_quarter
         else:
             waist_side_x = waist_quarter + 2
 
         garment_type = self.spec.get('garment_type', 'top').lower()
         hem_length = back_length + (35 if 'dress' in garment_type else 15)
-        hem_side_x = waist_side_x + 2
+        if 't-shirt' in garment_type or 'loose' in silhouette:
+            hem_side_x = waist_side_x
+        else:
+            hem_side_x = waist_side_x + 2
+
+        neckline = self.spec.get('neckline', 'round').lower()
+
+        if 'halter' in neckline:
+            shoulder_x = neck_width + 1.5
+            armhole_y = armhole_depth + 2
+            back_neck_depth = 10  # Halters scoop low in the back
+            neck_corner = (neck_width, 0)
+            neck_drop = (0, back_neck_depth)
+            neck_ctrl = (neck_width * 0.4, back_neck_depth * 0.8)
+        elif 'v-neck' in neckline or ('v' in neckline and 'scoop' not in neckline):
+            shoulder_x = (shoulder / 2) + 1
+            armhole_y = armhole_depth
+            back_neck_depth = 6  # Moderate V in back
+            neck_corner = (neck_width, 0)
+            neck_drop = (0, back_neck_depth)
+            neck_ctrl = (neck_width * 0.2, back_neck_depth * 0.5)
+        elif 'square' in neckline:
+            shoulder_x = (shoulder / 2) + 1
+            armhole_y = armhole_depth
+            back_neck_depth = 8
+            neck_corner = (neck_width, back_neck_depth)
+            neck_drop = (0, back_neck_depth)
+            neck_ctrl = (neck_width * 0.5, back_neck_depth)
+
+        else:  # Round
+            shoulder_x = (shoulder / 2) + 1
+            armhole_y = armhole_depth
+            back_neck_depth = 2.5
+            neck_corner = (neck_width, 0)
+            neck_drop = (0, back_neck_depth)
+            neck_ctrl = (neck_width * 0.4, back_neck_depth * 0.8)
 
         points = [
-            (0, 0), (neck_width, 0), (neck_width + 0.5, back_neck_depth),
-            (shoulder / 2 + 1, shoulder_drop), (bust_quarter, armhole_depth),
-            (waist_side_x, back_length), (hem_side_x, hem_length),
-            (0, hem_length), (0, back_length),
+            (0, 0),                                     # 0: CB neck top
+            neck_drop,                                  # 1: Neck drop
+            neck_corner,                                # 2: Side neck
+            (shoulder_x, shoulder_drop),                # 3: Shoulder tip
+            (bust_quarter, armhole_y),                  # 4: Underarm
+            (waist_side_x, back_length),                # 5: Waist
+            (hem_side_x, hem_length),                   # 6: Hem
+            (0, hem_length),                            # 7: CB Hem
+            (0, back_length),                           # 8: CB Waist
         ]
 
         curves = [
-            {'type': 'back_neck', 'start': points[1],
-             'control': (neck_width * 0.5, back_neck_depth * 0.7),
-             'end': points[0]},
+            {'type': 'back_neck', 'points': [points[1], neck_ctrl, points[2]]},
             {'type': 'armhole_s_curve',
              'points': [points[3],
-                        (points[3][0] + 1, points[3][1] + 3),
-                        (points[4][0] - 1, (points[3][1] + points[4][1]) / 2),
+                        (bust_quarter - 2, shoulder_drop + 3),
+                        (bust_quarter - 1, armhole_y - 4),
                         points[4]]}
         ]
 
-        measurements = {
-            'Neckline width': f"{neck_width:.1f} cm",
-            'Neckline depth': f"{back_neck_depth:.1f} cm",
-            'Shoulder width': f"{shoulder/2 + 1:.1f} cm",
-            'Armhole depth': f"{armhole_depth - shoulder_drop:.1f} cm",
-            'Bust width (1/4)': f"{bust_quarter:.1f} cm",
-            'Waist width (1/4)': f"{waist_side_x:.1f} cm",
-            'Hem width (1/4)': f"{hem_side_x:.1f} cm",
-            'Side seam length': f"{hem_length - shoulder_drop:.1f} cm",
-        }
+        edge_allowances = [
+            0.0,  # 0->1 CB fold
+            1.0,  # 1->2 Neckline curve
+            1.0,  # 2->3 Neck to shoulder
+            1.0,  # 3->4 Shoulder
+            1.0,  # 4->5 Armhole
+            1.5,  # 5->6 Side seam
+            2.0,  # 6->7 Hem
+            0.0,  # 7->8 CB fold
+            0.0,  # 8->0 CB fold
+        ]
 
         return {
             'name': 'back_bodice',
             'points': points,
             'curves': curves,
             'darts': [],
+            'edge_allowances': edge_allowances,
+            'notches': [
+                {'center': point_on_segment(points[2], points[3], 0.5), 'direction': (0, 1), 'kind': 'single'},
+                {'center': point_on_segment(points[3], points[4], 0.5), 'direction': (-1, 0), 'kind': 'double'},
+            ],
             'grainline': {'start': (bust_quarter * 0.35, armhole_depth + 8),
                           'end': (bust_quarter * 0.35, hem_length - 5)},
-            'measurements': measurements
+            'measurements': {}
+        }
+
+    def draft_sleeve(self):
+        bust = self.m['bust']
+        bicep = (bust / 4) + 5
+        armhole = (bust / 4) - 2
+        cap_height = armhole * 0.4
+
+        sleeve_type = self.spec.get('sleeve', 'short').lower()
+        sleeve_length = 20
+        if 'long' in sleeve_type:
+            sleeve_length = 60
+        elif 'wrist' in sleeve_type:
+            sleeve_length = 62
+        elif 'three' in sleeve_type:
+            sleeve_length = 50
+        elif 'elbow' in sleeve_type:
+            sleeve_length = 35
+        elif 'short' in sleeve_type:
+            sleeve_length = 20
+
+        cuff_width = bicep * 0.65
+
+        points = [
+            (bicep / 2, 0),  # 0: Cap peak
+            (bicep, cap_height),  # 1: Underarm right
+            (bicep, cap_height + 2),  # 2: Side right
+            (cuff_width + (bicep - cuff_width) / 2, sleeve_length),  # 3: Hem right
+            (bicep / 2 - cuff_width / 2, sleeve_length),  # 4: Hem left
+            (0, cap_height + 2),  # 5: Side left
+            (0, cap_height),  # 6: Underarm left
+        ]
+
+        curves = [
+            {'type': 'sleeve_cap',
+             'points': [points[6], (bicep * 0.15, cap_height * 0.2), (bicep * 0.3, 0), points[0]]},
+            {'type': 'sleeve_cap',
+             'points': [points[0], (bicep * 0.7, 0), (bicep * 0.85, cap_height * 0.2), points[1]]}
+        ]
+
+        edge_allowances = [1.0, 1.0, 1.5, 2.0, 1.5, 1.0, 1.0]
+
+        return {
+            'name': 'sleeve',
+            'points': points,
+            'curves': curves,
+            'darts': [],
+            'edge_allowances': edge_allowances,
+            'notches': [
+                {'center': point_on_segment(points[6], points[0], 0.5), 'direction': (0, -1), 'kind': 'single'},
+                {'center': point_on_segment(points[0], points[1], 0.5), 'direction': (0, -1), 'kind': 'double'},
+            ],
+            'grainline': {'start': (bicep / 2, 8), 'end': (bicep / 2, sleeve_length - 5)},
+            'measurements': {}
         }
 
     # ============================================================
@@ -271,11 +441,26 @@ class PatternDrafter:
             'Sleeve length': f"{sleeve_length:.1f} cm",
         }
 
+        edge_allowances = [
+            1.0,   # 0->1 sleeve cap (back half)
+            1.0,   # 1->2 cap to underarm
+            1.5,   # 2->3 side seam
+            2.0,   # 3->4 hem
+            1.5,   # 4->5 side seam
+            1.0,   # 5->6 underarm to cap
+            1.0,   # 6->0 sleeve cap (front half)
+        ]
+        notches = [
+            {'center': point_on_segment(points[6], points[0], 0.5), 'direction': (0, -1), 'kind': 'single'},
+            {'center': point_on_segment(points[0], points[1], 0.5), 'direction': (0, -1), 'kind': 'double'},
+        ]
         return {
             'name': 'sleeve',
             'points': points,
             'curves': curves,
             'darts': [],
+            'edge_allowances': edge_allowances,
+            'notches': notches,
             'grainline': {'start': (bicep / 2, 8), 'end': (bicep / 2, sleeve_length - 5)},
             'measurements': measurements
         }
@@ -323,13 +508,21 @@ class PatternDrafter:
             'Waist curve up': f"{waist_curve_up:.1f} cm",
         }
 
+        edge_allowances = [
+            0.0,   # 0->1 CF waist (fold)
+            1.0,   # 1->2 waist
+            1.5,   # 2->3 side seam
+            4.0,   # 3->4 hem (deep skirt hem)
+            0.0,   # 4->0 CF (fold)
+        ]
+
         return {
             'name': 'skirt_front',
             'points': points,
             'curves': curves,
             'darts': [],
-            'grainline': {'start': (waist_quarter * 0.4, 5),
-                          'end': (waist_quarter * 0.4, length - 5)},
+            'edge_allowances': edge_allowances,
+            'grainline': {'start': (0, 5), 'end': (0, length - 5)},
             'measurements': measurements
         }
 
@@ -339,192 +532,95 @@ class PatternDrafter:
         return piece
 
     # ============================================================
-    # PANTS - Absolute leg widths for proper taper
+    # PANTS
     # ============================================================
 
     def draft_pants_front(self):
-        """Front pants leg - absolute widths for proper taper."""
+        """Front pants - Strict Aldrich geometry"""
         waist = self.m['waist'] + self.ease['waist_ease']
         hips = self.m['hips'] + self.ease['hip_ease']
         length = self.m.get('garment_length', 100)
 
-        waist_quarter = waist / 4
-        hip_quarter = hips / 4
+        waist_q = waist / 4
+        hip_q = hips / 4
+        crotch_depth = (hips / 4) + 2
 
-        # Depth markers
-        hip_depth = length * 0.20
-        crotch_depth = length * 0.35
-        knee_depth = length * 0.62
+        thigh_width = hip_q + 2
+        knee_width = 22
+        hem_width = 18
 
-        # Block width based on hip (used for top of piece)
-        block_width = hip_quarter + 2   # ~26.25 cm for hips=97
-
-        # ============================================================
-        # CRITICAL: ABSOLUTE leg widths (NOT derived from hip)
-        # These are standard values for a medium build
-        # ============================================================
-        thigh_width = 30         # ~30 cm at widest (thigh level)
-        knee_width = 20          # ~20 cm at knee (proper taper)
-        hem_width = 14           # ~14 cm at ankle (narrow hem)
-
-        # Center of leg (for centering the leg)
-        leg_center = block_width * 0.55   # shift slightly right
+        leg_center = thigh_width * 0.65
 
         points = [
-            (0, 0),                                          # 0: CF waist
-            (waist_quarter, 0),                              # 1: Side waist
-            (waist_quarter + 1, hip_depth),                  # 2: Side hip
-            (block_width, crotch_depth - 5),                 # 3: Side above crotch
-            (leg_center + thigh_width / 2, crotch_depth),    # 4: THIGH outer
-            (leg_center + knee_width / 2, knee_depth),       # 5: Knee outer
-            (leg_center + hem_width / 2, length),            # 6: Hem outer
-            (leg_center - hem_width / 2, length),            # 7: Hem inner
-            (leg_center - knee_width / 2, knee_depth),       # 8: Knee inner
-            (leg_center - thigh_width / 2 + 3, crotch_depth + 3),  # 9: Thigh inner
-            (3.5, crotch_depth - 4),                         # 10: Crotch point
-            (0, crotch_depth - 6),                           # 11: Crotch curve start
+            (0, 0),  # 0: CF Waist
+            (waist_q, 0),  # 1: Side Waist
+            (hip_q + 1, 20),  # 2: Side Hip
+            (thigh_width, crotch_depth),  # 3: Side Crotch (widest)
+            (leg_center + (knee_width / 2), crotch_depth + ((length - crotch_depth) * 0.5)),  # 4: Outer Knee
+            (leg_center + (hem_width / 2), length),  # 5: Outer Hem
+            (leg_center - (hem_width / 2), length),  # 6: Inner Hem
+            (leg_center - (knee_width / 2), crotch_depth + ((length - crotch_depth) * 0.5)),  # 7: Inner Knee
+            (leg_center - (thigh_width / 2) + 2, crotch_depth + 5),  # 8: Inner Thigh
+            (hip_q * 0.3, crotch_depth + 2),  # 9: Crotch Point
+            (0, crotch_depth),  # 10: CF Crotch
         ]
 
         curves = [
-            {'type': 'pants_side_curve',
-             'points': [points[1],
-                        (waist_quarter + 1, hip_depth * 0.5),
-                        points[2],
-                        points[3],
-                        points[4],
-                        points[5],
-                        points[6]]},
-            {'type': 'pants_inseam_curve',
-             'points': [points[9],
-                        ((points[9][0] + points[8][0]) / 2, (crotch_depth + knee_depth) / 2),
-                        points[8],
-                        ((points[8][0] + points[7][0]) / 2, (knee_depth + length) / 2),
-                        points[7]]},
+            {'type': 'pants_side_curve', 'points': [points[1], points[2], points[3], points[4], points[5]]},
+            {'type': 'pants_inseam_curve', 'points': [points[6], points[7], points[8]]},
             {'type': 'pants_crotch_curve',
-             'points': [points[11],
-                        (1.5, crotch_depth - 3),
-                        points[10],
-                        (2.5, crotch_depth - 1),
-                        points[9]]},
+             'points': [points[10], (hip_q * 0.1, crotch_depth + 1), points[9], (hip_q * 0.2, crotch_depth + 4), points[8]]}
         ]
-
-        pockets = [
-            {'type': 'front_pocket',
-             'curve': [(0, 8), (waist_quarter * 0.5, 6),
-                       (waist_quarter * 0.2, hip_depth * 0.6)],
-             'label': 'Front Pocket'}
-        ]
-
-        measurements = {
-            'Waist (1/4)': f"{waist_quarter:.1f} cm",
-            'Hip (1/4)': f"{hip_quarter:.1f} cm",
-            'Block width': f"{block_width:.1f} cm",
-            'Thigh width': f"{thigh_width:.1f} cm",
-            'Crotch depth': f"{crotch_depth:.1f} cm",
-            'Knee width': f"{knee_width:.1f} cm",
-            'Hem width': f"{hem_width:.1f} cm",
-            'Total length': f"{length:.1f} cm",
-        }
 
         return {
-            'name': 'pants_front',
-            'points': points,
-            'curves': curves,
-            'darts': [],
-            'pockets': pockets,
-            'grainline': {'start': (leg_center, hip_depth + 15),
-                          'end': (leg_center, length - 10)},
-            'measurements': measurements
+            'name': 'pants_front', 'points': points, 'curves': curves, 'darts': [],
+            'edge_allowances': [1.5, 1.5, 1.5, 1.5, 1.5, 2.0, 1.5, 1.5, 1.5, 1.0, 1.0],
+            'grainline': {'start': (leg_center, crotch_depth + 10), 'end': (leg_center, length - 10)},
+            'measurements': {}
         }
 
     def draft_pants_back(self):
-        """Back pants leg - absolute widths."""
+        """Back pants - Strict Aldrich geometry"""
         waist = self.m['waist'] + self.ease['waist_ease']
         hips = self.m['hips'] + self.ease['hip_ease']
         length = self.m.get('garment_length', 100)
 
-        waist_quarter = waist / 4
-        hip_quarter = hips / 4
+        waist_q = waist / 4
+        hip_q = hips / 4
+        crotch_depth = (hips / 4) + 3
 
-        hip_depth = length * 0.20
-        crotch_depth = length * 0.37
-        knee_depth = length * 0.62
+        thigh_width = hip_q + 4
+        knee_width = 24
+        hem_width = 20
 
-        block_width = hip_quarter + 4   # back is wider
-
-        # ABSOLUTE leg widths (slightly wider than front)
-        thigh_width = 32
-        knee_width = 22
-        hem_width = 16
-
-        leg_center = block_width * 0.55
+        leg_center = thigh_width * 0.65
 
         points = [
-            (0, -2),                                         # 0: CB waist (raised)
-            (waist_quarter + 1, 0),                          # 1: Side waist
-            (waist_quarter + 2, hip_depth),                  # 2: Side hip
-            (block_width, crotch_depth - 5),                 # 3: Side above crotch
-            (leg_center + thigh_width / 2, crotch_depth),    # 4: THIGH outer
-            (leg_center + knee_width / 2, knee_depth),       # 5: Knee outer
-            (leg_center + hem_width / 2, length),            # 6: Hem outer
-            (leg_center - hem_width / 2, length),            # 7: Hem inner
-            (leg_center - knee_width / 2, knee_depth),       # 8: Knee inner
-            (leg_center - thigh_width / 2 + 3, crotch_depth + 3),  # 9: Thigh inner
-            (5, crotch_depth - 4),                           # 10: Crotch point
-            (0, crotch_depth - 6),                           # 11: Crotch curve start
+            (0, -2),  # 0: CB Waist
+            (waist_q + 2, 0),  # 1: Side Waist
+            (hip_q + 2, 20),  # 2: Side Hip
+            (thigh_width, crotch_depth),  # 3: Side Crotch
+            (leg_center + (knee_width / 2), crotch_depth + ((length - crotch_depth) * 0.5)),  # 4: Outer Knee
+            (leg_center + (hem_width / 2), length),  # 5: Outer Hem
+            (leg_center - (hem_width / 2), length),  # 6: Inner Hem
+            (leg_center - (knee_width / 2), crotch_depth + ((length - crotch_depth) * 0.5)),  # 7: Inner Knee
+            (leg_center - (thigh_width / 2) + 2, crotch_depth + 6),  # 8: Inner Thigh
+            (hip_q * 0.5, crotch_depth + 3),  # 9: Crotch Point
+            (0, crotch_depth + 2),  # 10: CB Crotch
         ]
 
         curves = [
-            {'type': 'pants_side_curve',
-             'points': [points[1],
-                        (waist_quarter + 2, hip_depth * 0.5),
-                        points[2],
-                        points[3],
-                        points[4],
-                        points[5],
-                        points[6]]},
-            {'type': 'pants_inseam_curve',
-             'points': [points[9],
-                        ((points[9][0] + points[8][0]) / 2, (crotch_depth + knee_depth) / 2),
-                        points[8],
-                        ((points[8][0] + points[7][0]) / 2, (knee_depth + length) / 2),
-                        points[7]]},
+            {'type': 'pants_side_curve', 'points': [points[1], points[2], points[3], points[4], points[5]]},
+            {'type': 'pants_inseam_curve', 'points': [points[6], points[7], points[8]]},
             {'type': 'pants_crotch_curve',
-             'points': [points[11],
-                        (2, crotch_depth - 3),
-                        points[10],
-                        (3, crotch_depth - 1),
-                        points[9]]},
+             'points': [points[10], (hip_q * 0.2, crotch_depth + 2), points[9], (hip_q * 0.4, crotch_depth + 5), points[8]]}
         ]
-
-        pockets = [
-            {'type': 'back_pocket',
-             'rect': [(hip_quarter * 0.35, hip_depth * 1.1),
-                      (hip_quarter * 0.65, hip_depth * 1.9)],
-             'label': 'Back Pocket'}
-        ]
-
-        measurements = {
-            'Waist (1/4)': f"{waist_quarter + 1:.1f} cm",
-            'Hip (1/4)': f"{hip_quarter + 1:.1f} cm",
-            'Block width': f"{block_width:.1f} cm",
-            'Thigh width': f"{thigh_width:.1f} cm",
-            'Crotch depth': f"{crotch_depth:.1f} cm",
-            'Knee width': f"{knee_width:.1f} cm",
-            'Hem width': f"{hem_width:.1f} cm",
-            'Total length': f"{length:.1f} cm",
-            'Back rise': f"{crotch_depth + 2:.1f} cm",
-        }
 
         return {
-            'name': 'pants_back',
-            'points': points,
-            'curves': curves,
-            'darts': [],
-            'pockets': pockets,
-            'grainline': {'start': (leg_center, hip_depth + 15),
-                          'end': (leg_center, length - 10)},
-            'measurements': measurements
+            'name': 'pants_back', 'points': points, 'curves': curves, 'darts': [],
+            'edge_allowances': [1.5, 1.5, 1.5, 1.5, 1.5, 2.0, 1.5, 1.5, 1.5, 1.0, 1.0],
+            'grainline': {'start': (leg_center, crotch_depth + 10), 'end': (leg_center, length - 10)},
+            'measurements': {}
         }
 
     # ============================================================
@@ -541,56 +637,44 @@ class PatternDrafter:
             (waistband_width, band_height), (0, band_height),
         ]
 
-        measurements = {
-            'Total width': f"{waistband_width:.1f} cm",
-            'Height': f"{band_height:.1f} cm",
-            'Cut': 'Cut 2 (interfaced)',
-        }
-
         return {
             'name': 'waistband',
             'points': points,
             'curves': [],
             'darts': [],
-            'grainline': {'start': (waistband_width * 0.5, 2),
-                          'end': (waistband_width * 0.5, band_height - 2)},
-            'measurements': measurements
+            'edge_allowances': [1.0, 1.0, 1.0, 1.0],
+            'grainline': {'start': (waistband_width * 0.5, 2), 'end': (waistband_width * 0.5, band_height - 2)},
+            'measurements': {}
         }
 
     def draft_back_yoke(self):
         waist = self.m['waist'] + self.ease['waist_ease']
         hips = self.m['hips'] + self.ease['hip_ease']
 
-        waist_quarter = waist / 4
-        hip_quarter = hips / 4
-        yoke_height = 8
+        waist_q = waist / 4
+        hip_q = hips / 4
+        yoke_height = 9
 
         points = [
-            (0, 0), (waist_quarter + 1, -1.5),
-            (hip_quarter + 1, yoke_height - 1),
-            (hip_quarter * 0.5, yoke_height + 1), (0, yoke_height),
+            (0, 0),                              # 0: CB Top
+            (waist_q + 1, -1),                   # 1: Side Top
+            (hip_q + 1, yoke_height - 1),        # 2: Side Bottom
+            (hip_q * 0.5, yoke_height + 2),      # 3: CB Bottom (curves down)
         ]
 
         curves = [
             {'type': 'yoke_bottom', 'start': points[0],
-             'control': (hip_quarter * 0.5, yoke_height + 2), 'end': points[4]},
+             'control': (hip_q * 0.25, yoke_height + 1), 'end': points[3]}
         ]
-
-        measurements = {
-            'Waist width': f"{waist_quarter + 1:.1f} cm",
-            'Hip width': f"{hip_quarter + 1:.1f} cm",
-            'Yoke height': f"{yoke_height:.1f} cm",
-            'Cut': 'Cut 2 (interfaced)',
-        }
 
         return {
             'name': 'back_yoke',
             'points': points,
             'curves': curves,
             'darts': [],
-            'grainline': {'start': (hip_quarter * 0.5, 2),
-                          'end': (hip_quarter * 0.5, yoke_height - 2)},
-            'measurements': measurements
+            'edge_allowances': [1.0, 1.0, 1.0, 1.0],
+            'grainline': {'start': (hip_q * 0.5, 2), 'end': (hip_q * 0.5, yoke_height - 2)},
+            'measurements': {}
         }
 
     def draft_front_fly(self):
@@ -599,47 +683,39 @@ class PatternDrafter:
 
         points = [(0, 0), (fly_width, 0), (fly_width, fly_length), (0, fly_length)]
 
-        measurements = {
-            'Width': f"{fly_width:.1f} cm",
-            'Length': f"{fly_length:.1f} cm",
-            'Cut': 'Cut 2 (mirrored)',
-        }
-
         return {
             'name': 'front_fly',
             'points': points,
             'curves': [],
             'darts': [],
-            'grainline': {'start': (fly_width * 0.5, 3),
-                          'end': (fly_width * 0.5, fly_length - 3)},
-            'measurements': measurements
+            'edge_allowances': [1.0, 1.0, 1.0, 1.0],
+            'grainline': {'start': (fly_width * 0.5, 3), 'end': (fly_width * 0.5, fly_length - 3)},
+            'measurements': {}
         }
 
     def draft_front_pocket_bag(self):
         pocket_width = 12
         pocket_height = 18
 
-        points = [(0, 0), (pocket_width, 0),
-                  (pocket_width, pocket_height), (0, pocket_height)]
+        # Corrected shape: tapered pocket bag
+        points = [
+            (0, 0),                              # 0: Top Left (closest to fly)
+            (pocket_width, 2),                   # 1: Top Right (curve down)
+            (pocket_width, pocket_height),       # 2: Bottom Right
+            (0, pocket_height - 2),              # 3: Bottom Left
+        ]
 
         curves = [
             {'type': 'pocket_curve', 'start': points[0],
-             'control': (pocket_width * 0.3, pocket_height * 0.1),
-             'end': points[3]},
+             'control': (pocket_width * 0.3, 1), 'end': points[1]}
         ]
-
-        measurements = {
-            'Width': f"{pocket_width:.1f} cm",
-            'Height': f"{pocket_height:.1f} cm",
-            'Cut': 'Cut 4 (2 per side)',
-        }
 
         return {
             'name': 'pocket_bag',
             'points': points,
             'curves': curves,
             'darts': [],
-            'grainline': {'start': (pocket_width * 0.5, 3),
-                          'end': (pocket_width * 0.5, pocket_height - 3)},
-            'measurements': measurements
+            'edge_allowances': [1.0, 1.0, 1.0, 1.0],
+            'grainline': {'start': (pocket_width * 0.5, 3), 'end': (pocket_width * 0.5, pocket_height - 3)},
+            'measurements': {}
         }
