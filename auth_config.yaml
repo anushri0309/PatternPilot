@@ -1,0 +1,10 @@
+cookie:
+  expiry_days: 30
+  key: pattern_pilot_key
+  name: pattern_pilot_cookie
+credentials:
+  usernames:
+    admin:
+      email: admin@patternpilot.com
+      name: Demo User
+      password: $2b$12$BfWXDdspw5km8kk7smKnsuVh8EgUB41.QrXOd5NN8gAezsJfVVRA.

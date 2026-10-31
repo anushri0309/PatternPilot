@@ -130,7 +130,9 @@ def get_measurement_defaults(garment_type, gender='Female'):
 
 def load_models():
     """Load all trained AI models."""
-    models_dir = Path("data/models_train")
+    # Get the absolute path of the folder containing this file
+    BASE_DIR = Path(__file__).resolve().parent
+    models_dir = BASE_DIR / "data" / "models_train"
 
     with open(models_dir / "scaler.pkl", 'rb') as f:
         fp_scaler = pickle.load(f)
@@ -434,7 +436,15 @@ def main():
     generator.export_svg(pattern, output_path)
     print(f"\n✅ Complete! Open {output_path}")
 
-
+    # STEP 6: TEST OPENPATTERN INTEGRATION (Optional)
+    print("\n🧵 Step 6: Testing OpenPattern Backend...")
+    try:
+        from src.openpattern_generator import OpenPatternGenerator
+        op_gen = OpenPatternGenerator(spec)
+        op_gen.generate(f"output/ai_openpattern_{int(time.time())}")
+        print("✅ Successfully generated OpenPattern file from AI data!")
+    except Exception as e:
+        print(f"⚠️ OpenPattern integration failed: {e}")
 
 
 if __name__ == "__main__":

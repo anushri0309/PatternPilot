@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pattern Pilot — Studio</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body class="in-app">
+  <canvas id="flow-bg" aria-hidden="true"></canvas>
+
+  <div class="mobile-bar">
+    <a href="/" class="home-brand"><span class="logo-word">pattern <strong>pilot</strong></span></a>
+    <button id="menu-btn" class="icon-btn" aria-label="Open menu">☰</button>
+  </div>
+
+  <aside class="sidebar" id="sidebar">
+    <div class="welcome">
+      <p class="welcome-hi">Welcome back, <span id="user-name">Maker</span>.</p>
+      <p class="welcome-desc">Turn one garment photo into a printable sewing pattern in five gentle steps.</p>
+    </div>
+
+    <ul class="steps-nav" id="steps-nav">
+      <li data-step="1" class="is-active"><button><span class="step-dot">1</span><span class="step-name">Upload garment</span></button></li>
+      <li data-step="2" class="is-locked"><button disabled><span class="step-dot">2</span><span class="step-name">Review AI predictions</span></button></li>
+      <li data-step="3" class="is-locked"><button disabled><span class="step-dot">3</span><span class="step-name">Body measurements</span></button></li>
+      <li data-step="4" class="is-locked"><button disabled><span class="step-dot">4</span><span class="step-name">Generate pattern</span></button></li>
+      <li data-step="5" class="is-locked"><button disabled><span class="step-dot">5</span><span class="step-name">Your pattern</span></button></li>
+    </ul>
+
+    <div class="sidebar-foot">
+      <div class="progress"><div class="progress-bar" id="progress-bar"></div></div>
+      <p class="progress-text" id="progress-text">Step 1 of 5</p>
+      <a href="/" class="btn btn-ghost btn-block btn-sm" id="logout-btn">Back to Home</a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="main-inner">
+
+      <section class="card step is-active" id="step-1" data-step="1">
+        <div class="step-head">
+          <div class="step-badge">1</div>
+          <div>
+            <h2>Upload your garment</h2>
+            <p class="muted">A front-facing photo on a plain background works best. JPG or PNG, up to 10 MB.</p>
+          </div>
+        </div>
+        <label class="dropzone" id="dropzone" for="file-input">
+          <input type="file" id="file-input" accept="image/png, image/jpeg" hidden>
+          <svg class="dz-icon" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+          <span class="dz-title">Drag & drop your photo here</span>
+          <span class="dz-sub">or <u>browse files</u></span>
+        </label>
+        <div id="preview" hidden>
+          <div class="preview-frame">
+            <img id="preview-img" alt="Garment preview">
+            <div class="scan-overlay" id="scan-overlay" hidden>
+              <div class="scan-line"></div>
+              <div class="scan-msg"><p>Analyzing garment...</p></div>
+            </div>
+          </div>
+          <div class="preview-meta">
+            <p class="file-name" id="file-name"></p>
+            <button class="btn btn-ghost btn-sm" id="replace-btn">Replace photo</button>
+          </div>
+        </div>
+        <div class="actions"><button class="btn btn-primary" id="analyze-btn" disabled>Analyze garment ✨</button></div>
+        <p class="form-error" id="upload-error" hidden></p>
+      </section>
+
+      <section class="card step" id="step-2" data-step="2" hidden>
+        <div class="step-head">
+          <div class="step-badge">2</div>
+          <div><h2>Review AI predictions</h2><p class="muted">We've guessed the details. Adjust them if needed.</p></div>
+        </div>
+        <div id="review-grid" class="grid grid-3"></div>
+        <div id="shoulder-band-wrap" hidden class="check">
+          <input type="checkbox" id="shoulder-band">
+          <span class="check-box"></span>
+          <label for="shoulder-band">Add separate shoulder band?</label>
+        </div>
+        <div class="actions"><button class="btn btn-primary" id="review-next">Confirm & Measure →</button></div>
+      </section>
+
+      <section class="card step" id="step-3" data-step="3" hidden>
+        <div class="step-head">
+          <div class="step-badge">3</div>
+          <div><h2>Body measurements</h2><p class="muted">Enter your measurements for this draft.</p></div>
+          <div class="seg" id="unit-toggle">
+             <button class="seg-btn is-active" data-unit="cm">cm</button>
+             <button class="seg-btn" data-unit="in">in</button>
+             <div class="seg-thumb"></div>
+          </div>
+        </div>
+        <div id="measure-grid" class="grid grid-3"></div>
+        <div class="actions"><button class="btn btn-primary" id="measure-next">Confirm & Generate →</button></div>
+      </section>
+
+      <section class="card step" id="step-4" data-step="4" hidden>
+        <div class="step-head">
+          <div class="step-badge">4</div>
+          <div><h2>Generate pattern</h2><p class="muted">We'll draft your custom pattern using Aldrich math.</p></div>
+        </div>
+        <div id="summary-chips" class="chips"></div>
+        <div class="generate-box">
+          <button class="btn btn-primary btn-xl" id="generate-btn">Generate my pattern ✂️</button>
+          <div id="gen-loading" class="gen-loading" hidden><p>Drafting your pattern...</p></div>
+        </div>
+        <p class="form-error" id="gen-error" hidden><span id="gen-error-msg"></span></p>
+      </section>
+
+      <section class="card step step-wide" id="step-5" data-step="5" hidden>
+        <div class="step-head">
+          <div class="step-badge">5</div>
+          <div><h2>Your pattern</h2><p class="muted">Print at 100% scale for accurate sizing.</p></div>
+        </div>
+        <div class="result-bar">
+          <div class="result-meta"><span class="chip conf" id="size-chip">Real size</span></div>
+          <div class="result-actions">
+             <div class="tool-group">
+                <button class="icon-btn tool" id="zoom-out">−</button>
+                <button class="icon-btn tool" id="zoom-fit">Fit</button>
+                <button class="icon-btn tool" id="zoom-in">+</button>
+             </div>
+             <button class="btn btn-primary" id="download-btn">Download SVG ↓</button>
+          </div>
+        </div>
+        <div class="viewer-shell" id="viewer-shell">
+          <div class="viewer" id="viewer"><div class="viewer-canvas" id="viewer-canvas"></div></div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+  <div class="scrim" id="scrim" hidden></div>
+  <div class="toast-region" id="toasts"></div>
+
+  <script src="{{ url_for('static', filename='api.js') }}"></script>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+<!-- DEBUG BUTTON -->
+<div style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; background: white; padding: 20px; border: 2px solid red; border-radius: 10px;">
+    <h4>Debug Tools</h4>
+    <button onclick="forceMaxiDress()" style="background: red; color: white; padding: 10px; border-radius: 5px; cursor: pointer;">
+        FORCE MAXI DRESS
+    </button>
+</div>
+
+<script>
+async function forceMaxiDress() {
+    console.log("Forcing Maxi Dress...");
+
+    // Hardcoded payload to bypass the UI entirely
+    const payload = {
+        spec: {
+            garment_type: "dress",
+            silhouette: "fitted",
+            neckline: "v",
+            sleeve_length: "sleeveless",
+            waistline: "natural_waist",
+            length: "maxi"
+        },
+        measurements_cm: {
+            bust: 91,
+            waist: 71,
+            hips: 97,
+            shoulder: 38,
+            length: 60, // The slider says 60
+            sleeve: 0,
+            back_length: 40,
+            neck_depth: 8
+        },
+        method: "aldrich"
+    };
+
+    const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+
+    const data = await response.json();
+
+    if (data.svg) {
+        // Find the canvas and inject the SVG
+        const canvas = document.getElementById('viewer-canvas');
+        if (canvas) {
+            canvas.innerHTML = data.svg;
+            alert("SUCCESS! The backend generated a Maxi Dress. Check the preview.");
+        } else {
+            alert("Backend worked, but could not find the preview box.");
+        }
+    } else {
+        alert("Backend Error: " + data.message);
+    }
+}
+</script>
+</body>
+</html>

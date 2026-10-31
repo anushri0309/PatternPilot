@@ -1,13 +1,19 @@
-# test_garmentcode.py
-from pygarment.data_config import Properties
-from pygarment.garmentcode import Bodice
+import matplotlib.pyplot as plt
+import OpenPattern as OP
+import os
 
-# Load default design parameters
-props = Properties("assets/design_params/default.yaml")
+# Ensure output folder exists
+os.makedirs("output", exist_ok=True)
 
-# Create a basic bodice pattern
-garment = Bodice(props)
-garment.assert_valid()
+# Create the bodice
+p = OP.Basic_Bodice(pname="W36G", gender='w', style='Gilewska')
 
-# Save the pattern
-garment.save("output/test_bodice")
+# Add darts
+p.add_bust_dart()
+p.add_waist_dart()
+
+# Draw and save
+# save=True tells it to save, filename="output/test_bodice" tells it where
+p.draw({"Pattern": "Test Bodice"}, save=True, filename="output/test_bodice")
+
+print("✅ File saved to output/test_bodice")

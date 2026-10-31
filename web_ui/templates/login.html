@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pattern Pilot — Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body class="in-auth">
+  <canvas id="flow-bg" aria-hidden="true"></canvas>
+
+  <main class="view-login">
+    <div class="login-top">
+       <a class="home-brand" href="/"><span class="logo-word">pattern <strong>pilot</strong></span></a>
+       <p class="eyebrow">WELCOME BACK</p>
+       <h1 class="login-title">Make <em>something</em> lovely.</h1>
+    </div>
+
+    <div class="login-panel">
+      <div class="card login-card">
+        <form method="POST" action="/login">
+          {% if error %}<p class="form-error">{{ error }}</p>{% endif %}
+          <div class="field">
+            <label for="email">Email</label>
+            <input type="text" id="email" name="email" placeholder="admin" required>
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" placeholder="password123" required>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+        </form>
+        <p class="auth-switch">Don't have an account? <a href="#" class="link-btn">Create one</a></p>
+      </div>
+    </div>
+  </main>
+
+  <script src="{{ url_for('static', filename='flow-bg.js') }}"></script>
+</body>
+</html>

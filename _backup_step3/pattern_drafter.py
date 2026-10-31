@@ -1,4 +1,35 @@
-"""
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
++"""
 Parametric pattern drafting engine with full measurement metadata.
 Supports: bodice, skirt, sleeve, pants + jeans pieces.
 Pants use absolute thigh/knee/hem widths for proper taper.

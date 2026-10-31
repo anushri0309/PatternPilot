@@ -1,0 +1,470 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pattern Pilot</title>
+  <meta name="description" content="Turn a single garment photo into a printable sewing pattern.">
+  <meta name="theme-color" content="#FDEEF3">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Crect width='48' height='48' rx='14' fill='%23C95F8E'/%3E%3Cpath d='M15 35 34 13' stroke='white' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+
+<!-- Shared SVG defs: logo mark -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#E58AAE"/>
+      <stop offset="1" stop-color="#8A4B76"/>
+    </linearGradient>
+    <symbol id="logo-mark" viewBox="0 0 48 48">
+      <rect width="48" height="48" rx="14" fill="url(#lg)"/>
+      <path d="M13 36c1-9 10-5 12-12s9-4 10-11" fill="none" stroke="#fff" stroke-opacity=".75" stroke-width="2" stroke-linecap="round" stroke-dasharray="1 4.5"/>
+      <path d="M15 35 35 12" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+      <ellipse cx="33.2" cy="14.2" rx="1.3" ry="2.6" transform="rotate(40 33.2 14.2)" fill="#A55C8C"/>
+    </symbol>
+  </defs>
+</svg>
+
+<canvas id="flow-bg" aria-hidden="true"></canvas>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<div id="view-home" class="view view-home">
+  <header class="home-nav">
+    <a class="logo home-brand" href="#" data-home data-liquid data-h="48" role="img" aria-label="Pattern Pilot">
+      <span class="logo-fallback"><svg class="logo-mark" width="42" height="42"><use href="#logo-mark"/></svg><span class="logo-word">pattern <strong>pilot</strong></span></span>
+    </a>
+    <nav class="home-nav-links" aria-label="Main navigation">
+      <button type="button" class="nav-login" data-open-login>Login</button>
+      <a href="#home-process" data-process> The process </a>
+      <button type="button" class="nav-text" data-enter-studio>Studio</button>
+      <button type="button" class="btn btn-primary nav-cta" data-enter-studio>Make a pattern <span aria-hidden="true">↗</span></button>
+    </nav>
+  </header>
+  <main class="home-main" id="home-main">
+    <section class="landing-hero">
+      <div class="landing-copy">
+        <p class="eyebrow"><span></span> YOUR IDEA, IN SEWING FORM</p>
+        <h1 class="landing-title">A pattern that feels<br>like <em>yours.</em></h1>
+        <p class="landing-subtitle">Turn a garment photo into a starting point for your next make.<br class="desktop-break"> Thoughtful details, a little creativity, and a pattern shaped around you.</p>
+        <div class="landing-actions">
+          <button type="button" class="btn btn-primary btn-hero" data-enter-studio>Enter the studio <span aria-hidden="true">↗</span></button>
+          <a class="home-process-link" href="#home-process" data-process>See how it works <span aria-hidden="true">↓</span></a>
+        </div>
+        <div class="landing-note"><span>✳</span> From photo to first stitch, in a few thoughtful steps</div>
+        <div class="landing-steps" aria-label="Three steps">
+          <div><b>01</b><span>Upload<br>your photo</span></div><i></i>
+          <div><b>02</b><span>Fine-tune<br>the details</span></div><i></i>
+          <div><b>03</b><span>Shape your<br>pattern</span></div>
+        </div>
+      </div>
+      <div class="landing-art" aria-hidden="true">
+        <svg viewBox="0 0 440 480" class="landing-pattern-art">
+          <defs><linearGradient id="homePaper" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff" stop-opacity=".78"/><stop offset="1" stop-color="#f7dce8" stop-opacity=".32"/></linearGradient></defs>
+          <path class="home-pattern-shadow" d="M100 65 Q170 28 226 74 L287 132 Q302 148 287 177 L270 208 L292 395 L108 395 L118 212 Q88 183 83 139 Z"/>
+          <path class="home-pattern-cut" d="M82 51 Q165 12 236 65 L298 123 Q315 140 299 178 L282 207 L305 415 L91 415 L102 211 Q68 176 65 130 Z"/>
+          <path class="home-pattern-stitch" d="M100 65 Q170 28 226 74 L287 132 Q302 148 287 177 L270 208 L292 395 L108 395 L118 212 Q88 183 83 139 Z"/>
+          <path class="home-grain" d="M183 222 V338 M183 222 l-7 12 M183 222 l7 12"/>
+          <path class="home-dimension" d="M335 130 V395 M328 130 H342 M328 395 H342"/>
+          <text x="349" y="270">55 cm</text><text x="139" y="445">CUT LINE · 1.5 CM</text>
+        </svg>
+        <span class="landing-art-tag tag-cut">✳ MADE FOR YOUR MEASUREMENTS</span>
+        <span class="landing-art-tag tag-grain">GRAINLINE</span>
+      </div>
+    </section>
+    <section class="home-process" id="home-process">
+      <p class="eyebrow centered">A SIMPLE LITTLE PROCESS</p>
+      <h2>From photo to <em>first stitch.</em></h2>
+      <p class="home-process-intro">Everything you need to turn a garment you love into a pattern you can make.</p>
+      <div class="home-process-grid">
+        <article><span>01</span><div class="process-icon">↥</div><h3>Upload your photo</h3><p>Start with a clear photo of the garment that caught your eye.</p></article>
+        <article><span>02</span><div class="process-icon">✳</div><h3>Review the details</h3><p>See the detected garment and adjust anything that needs a little nudge.</p></article>
+        <article><span>03</span><div class="process-icon">⌁</div><h3>Make it yours</h3><p>Add your measurements and bring the pattern into view.</p></article>
+      </div>
+      <button type="button" class="btn btn-primary" data-enter-studio>Let’s make a pattern <span aria-hidden="true">↗</span></button>
+    </section>
+    <footer class="home-footer">Made with <span>🧵</span> and care · Pattern Pilot</footer>
+  </main>
+</div>
+
+
+<!-- ============================================================
+     VIEW 1 · LOGIN / REGISTER
+     ============================================================ -->
+<div id="view-login" class="view view-login" hidden>
+
+  <button type="button" class="back-home" data-home>← Back to homepage</button>
+
+  <!-- TOP SECTION: brand + sign-in, centred -->
+  <header class="login-top">
+    <div class="logo logo-xl" data-liquid data-h="92" role="img" aria-label="Pattern Pilot">
+      <span class="logo-fallback">
+        <svg class="logo-mark" width="64" height="64"><use href="#logo-mark"/></svg>
+        <span class="logo-word">Pattern Pilot</span>
+      </span>
+    </div>
+    <p class="eyebrow">Photo → Pattern</p>
+    <h1 class="login-title">From a single photo to a pattern you can <em>print and sew</em>.</h1>
+  </header>
+
+  <main class="login-panel">
+    <div class="login-card card">
+      <div class="seg" role="tablist" aria-label="Sign in or create account" id="auth-tabs">
+        <button type="button" role="tab" aria-selected="true" data-mode="login" class="seg-btn is-active">Sign in</button>
+        <button type="button" role="tab" aria-selected="false" data-mode="register" class="seg-btn">Create account</button>
+        <span class="seg-thumb" aria-hidden="true"></span>
+      </div>
+
+      <form id="auth-form" novalidate>
+        <div class="field only-register" hidden>
+          <label for="auth-name">Your name</label>
+          <input id="auth-name" type="text" autocomplete="name" placeholder="e.g. Aslam">
+        </div>
+        <div class="field">
+          <label for="auth-email">Email or username</label>
+          <input id="auth-email" type="text" autocomplete="username" placeholder="you@example.com" required>
+        </div>
+        <div class="field">
+          <label for="auth-password">Password</label>
+          <div class="input-wrap">
+            <input id="auth-password" type="password" autocomplete="current-password" placeholder="At least 6 characters" required>
+            <button type="button" class="icon-btn pw-toggle" aria-label="Show password" aria-pressed="false">
+              <svg class="i-eye" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg class="i-eye-off" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" hidden><path d="M3 3l18 18"/><path d="M10.6 5.1A10 10 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4"/><path d="M6.6 6.6C3.9 8.4 2 12 2 12s3.6 7 10 7a9.7 9.7 0 0 0 4.4-1"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="field only-register" hidden>
+          <label for="auth-confirm">Confirm password</label>
+          <input id="auth-confirm" type="password" autocomplete="new-password" placeholder="Repeat your password">
+        </div>
+
+        <p class="form-error" id="auth-error" role="alert" hidden></p>
+
+        <button type="submit" class="btn btn-primary btn-block" id="auth-submit">
+          <span class="btn-label">Sign in</span>
+          <span class="btn-spinner" aria-hidden="true"></span>
+        </button>
+      </form>
+
+      <p class="auth-switch">
+        <span class="only-login">New here? <button type="button" class="link-btn" data-switch="register">Create an account</button></span>
+        <span class="only-register" hidden>Already have an account? <button type="button" class="link-btn" data-switch="login">Sign in</button></span>
+      </p>
+</div>
+
+    <ul class="login-steps" aria-label="How it works">
+      <li><span>1</span>Upload a garment photo</li>
+      <li><span>2</span>Confirm what the AI sees</li>
+      <li><span>3</span>Add your measurements</li>
+      <li><span>4</span>Print your pattern</li>
+    </ul>
+  </main>
+</div>
+
+<!-- ============================================================
+     VIEW 2 · APP (dashboard + workflow)
+     ============================================================ -->
+<div id="view-app" class="view view-app" hidden>
+
+  <!-- Mobile top bar -->
+  <header class="mobile-bar">
+    <div class="logo" data-liquid data-h="38" role="img" aria-label="Pattern Pilot">
+      <span class="logo-fallback"><svg class="logo-mark" width="34" height="34"><use href="#logo-mark"/></svg><span class="logo-word">Pattern Pilot</span></span>
+    </div>
+    <button class="icon-btn" id="menu-btn" aria-label="Open menu" aria-expanded="false" aria-controls="sidebar">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+  </header>
+  <div class="scrim" id="scrim" hidden></div>
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="logo" data-liquid data-h="46" role="img" aria-label="Pattern Pilot">
+      <span class="logo-fallback"><svg class="logo-mark" width="40" height="40"><use href="#logo-mark"/></svg><span class="logo-word">Pattern Pilot</span></span>
+    </div>
+
+    <div class="welcome">
+      <p class="welcome-hi">Welcome back, <strong id="user-name">friend</strong> 🧵</p>
+      <p class="welcome-desc">Turn one garment photo into a printable sewing pattern in five gentle steps.</p>
+    </div>
+
+    <nav aria-label="Workflow steps">
+      <ol class="steps-nav" id="steps-nav">
+        <li data-step="1"><button type="button"><span class="step-dot">1</span><span class="step-name">Upload garment</span></button></li>
+        <li data-step="2"><button type="button"><span class="step-dot">2</span><span class="step-name">Review AI predictions</span></button></li>
+        <li data-step="3"><button type="button"><span class="step-dot">3</span><span class="step-name">Body measurements</span></button></li>
+        <li data-step="4"><button type="button"><span class="step-dot">4</span><span class="step-name">Generate pattern</span></button></li>
+        <li data-step="5"><button type="button"><span class="step-dot">5</span><span class="step-name">Your pattern</span></button></li>
+      </ol>
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="progress" aria-hidden="true"><div class="progress-bar" id="progress-bar"></div></div>
+      <p class="progress-text" id="progress-text">Step 1 of 5</p>
+      <button type="button" class="btn btn-ghost btn-block" id="logout-btn">Log out</button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main" id="main">
+    <div class="main-inner">
+
+      <section class="hero" id="hero">
+        <p class="eyebrow">Your sewing studio</p>
+        <h1>Let’s turn a photo into a <em>pattern</em>.</h1>
+        <p class="hero-sub">Start with a clear photo of the garment. We’ll suggest the details, you fine-tune them, and we draft the pieces for you.</p>
+      </section>
+
+      <!-- STEP 1 · UPLOAD -->
+      <section class="step card is-active" id="step-1" data-step="1" aria-labelledby="t1">
+        <header class="step-head">
+          <span class="step-badge">1</span>
+          <div><h2 id="t1">Upload your garment</h2><p class="muted">A front-facing photo on a plain background works best. JPG or PNG, up to 10 MB.</p></div>
+        </header>
+
+        <div class="upload-area">
+          <label class="dropzone" id="dropzone" for="file-input">
+            <input id="file-input" type="file" accept="image/png,image/jpeg">
+            <svg class="dz-icon" viewBox="0 0 64 64" width="64" height="64" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M20 22l-10 6 6 10 6-3v22h24V35l6 3 6-10-10-6c-2 4-6 6-10 6s-8-2-10-6z"/>
+            </svg>
+            <span class="dz-title">Drag &amp; drop your photo here</span>
+            <span class="dz-sub">or <u>browse files</u></span>
+          </label>
+
+          <div class="preview" id="preview" hidden>
+            <div class="preview-frame">
+              <img id="preview-img" alt="Preview of your uploaded garment">
+              <div class="scan-overlay" id="scan-overlay" hidden>
+                <div class="scan-line"></div>
+                <div class="scan-msg">
+                  <svg class="stitch-loader" viewBox="0 0 120 12" aria-hidden="true"><line x1="4" y1="6" x2="116" y2="6"/></svg>
+                  <p>Reading your garment…</p>
+                </div>
+              </div>
+            </div>
+            <div class="preview-meta">
+              <p class="file-name" id="file-name"></p>
+              <div class="photo-actions"><button type="button" class="link-btn" id="replace-btn">Choose a different photo</button><button type="button" class="link-btn remove-photo-btn" id="remove-photo-btn">Remove photo</button></div>
+            </div>
+          </div>
+        </div>
+
+        <p class="form-error" id="upload-error" role="alert" hidden></p>
+
+        <div class="actions">
+          <button type="button" class="btn btn-primary" id="analyze-btn" disabled>
+            <span class="btn-label">Analyze garment ✨</span><span class="btn-spinner" aria-hidden="true"></span>
+          </button>
+        </div>
+      </section>
+
+      <!-- STEP 2 · REVIEW -->
+      <section class="step card is-locked" id="step-2" data-step="2" aria-labelledby="t2" hidden>
+        <header class="step-head">
+          <span class="step-badge">2</span>
+          <div><h2 id="t2">What kind of garment is this?</h2><p class="muted">We looked at your photo and made a guess. If we got it wrong, just pick the right one.</p></div>
+        </header>
+
+        <div class="detect" id="detect">
+          <img class="detect-thumb" id="detect-thumb" alt="Your uploaded garment">
+          <div class="detect-main">
+            <p class="detect-kicker" id="detect-kicker">We think this is a</p>
+            <h3 class="detect-label" id="detect-label">Garment</h3>
+            <div class="detect-conf">
+              <div class="meter" id="detect-meter-wrap" aria-hidden="true"><i id="detect-meter"></i></div>
+              <span id="detect-conf">–</span>
+            </div>
+            <p class="detect-hint" id="detect-hint" hidden></p>
+            <div class="detect-alts" id="detect-alts" hidden></div>
+          </div>
+          <div class="detect-actions">
+            <button type="button" class="btn btn-ghost btn-sm" id="detect-change" aria-expanded="false" aria-controls="picker">Not right? Choose it myself</button>
+          </div>
+        </div>
+
+        <div class="picker" id="picker" hidden>
+          <p class="picker-title">Pick the garment that matches your photo</p>
+          <div class="tiles" id="tiles" role="radiogroup" aria-label="Garment type"></div>
+        </div>
+
+        <div class="chips" id="detect-chips"></div>
+
+        <h3 class="sub-title">Fine-tune the details</h3>
+        <div class="grid grid-3" id="review-grid"></div>
+
+        <label class="check" id="shoulder-band-wrap" hidden>
+          <input type="checkbox" id="shoulder-band">
+          <span class="check-box" aria-hidden="true"></span>
+          <span><strong>Add a shoulder band</strong><small>For off-shoulder tops: adds an elasticated band around the shoulders.</small></span>
+        </label>
+
+        <div class="actions">
+          <button type="button" class="btn btn-primary" id="review-next">Looks good, continue</button>
+        </div>
+      </section>
+
+      <!-- STEP 3 · MEASUREMENTS -->
+      <section class="step card is-locked" id="step-3" data-step="3" aria-labelledby="t3" hidden>
+        <header class="step-head">
+          <span class="step-badge">3</span>
+          <div><h2 id="t3">Your measurements</h2><p class="muted">Measure snugly over light clothing. We pre-filled typical values so you can start right away.</p></div>
+          <div class="seg seg-sm" id="unit-toggle" role="group" aria-label="Units">
+            <button type="button" class="seg-btn is-active" data-unit="cm" aria-pressed="true">cm</button>
+            <button type="button" class="seg-btn" data-unit="in" aria-pressed="false">in</button>
+            <span class="seg-thumb" aria-hidden="true"></span>
+          </div>
+        </header>
+
+        <div class="grid grid-3" id="measure-grid"></div>
+
+        <div class="actions">
+          <button type="button" class="btn btn-primary" id="measure-next">Save measurements</button>
+        </div>
+      </section>
+
+      <!-- STEP 4 · GENERATE -->
+      <section class="step card is-locked" id="step-4" data-step="4" aria-labelledby="t4" hidden>
+        <header class="step-head">
+          <span class="step-badge">4</span>
+          <div><h2 id="t4">Generate your pattern</h2><p class="muted">Everything look right? Here’s your summary.</p></div>
+        </header>
+
+        <div class="chips" id="summary-chips"></div>
+
+        <div class="banner banner-error" id="gen-error" role="alert" hidden>
+          <span class="banner-ico" aria-hidden="true">!</span>
+          <div><strong>We couldn’t draft that pattern.</strong><p id="gen-error-msg"></p></div>
+        </div>
+
+        <div class="generate-box">
+          <button type="button" class="btn btn-primary btn-xl" id="generate-btn">
+            <span class="btn-label">Generate My Pattern ✂️</span><span class="btn-spinner" aria-hidden="true"></span>
+          </button>
+          <div class="gen-loading" id="gen-loading" hidden aria-live="polite">
+            <svg class="stitch-loader" viewBox="0 0 120 12" aria-hidden="true"><line x1="4" y1="6" x2="116" y2="6"/></svg>
+            <p>Drafting Aldrich blocks...</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- STEP 5 · RESULTS -->
+      <section class="step step-wide card is-locked" id="step-5" data-step="5" aria-labelledby="t5" hidden>
+        <header class="step-head">
+          <span class="step-badge">5</span>
+          <div><h2 id="t5">Your pattern is ready</h2><p class="muted">Check the pieces, then download the SVG or print it straight away.</p></div>
+        </header>
+
+        <div class="banner banner-success" id="success-banner" role="status">
+          <span class="banner-ico success-check" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>
+          </span>
+          <div><strong>All stitched up!</strong><p id="success-msg">Your pattern pieces are drafted and ready to print.</p></div>
+          <div class="sparkles" id="sparkles" aria-hidden="true"></div>
+        </div>
+
+        <div class="result-bar">
+          <div class="result-meta">
+            <span class="chip" id="size-chip">Real size · –</span>
+            <span class="chip chip-soft">Print at 100% scale</span>
+          </div>
+          <div class="result-actions">
+            <button type="button" class="btn btn-primary btn-lg" id="download-btn">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m0 0l-4.5-4.5M12 15l4.5-4.5M4 20h16"/></svg>
+              Download SVG
+            </button>
+            <button type="button" class="btn btn-outline btn-lg" id="print-btn">
+              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 9V3h10v6M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><rect x="7" y="14" width="10" height="7" rx="1"/></svg>
+              Print pattern
+            </button>
+          </div>
+        </div>
+
+        <div class="viewer-shell" id="viewer-shell">
+          <div class="viewer-tools" role="group" aria-label="Pattern view controls">
+            <button type="button" class="icon-btn tool" id="zoom-out" aria-label="Zoom out">−</button>
+            <button type="button" class="tool-text" id="zoom-fit">Fit</button>
+            <button type="button" class="tool-text" id="zoom-actual" title="Show at real-world size">Actual size</button>
+            <button type="button" class="icon-btn tool" id="zoom-in" aria-label="Zoom in">+</button>
+            <button type="button" class="icon-btn tool" id="fullscreen-btn" aria-label="Full screen" title="Full screen">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+            </button>
+          </div>
+          <div class="viewer" id="viewer" data-lenis-prevent tabindex="0" aria-label="Pattern preview, scrollable">
+            <div class="viewer-canvas" id="viewer-canvas"></div>
+          </div>
+        </div>
+
+        <div class="legend" aria-label="Pattern legend">
+          <span><i class="lg lg-stitch"></i>Stitching line</span>
+          <span><i class="lg lg-cut"></i>Cutting line</span>
+          <span><i class="lg lg-grain"></i>Grainline</span>
+          <span><i class="lg lg-dim"></i>Dimensions</span>
+          <span><i class="lg lg-notch"></i>Notches</span>
+        </div>
+
+        <div class="redraft" id="method-wrap">
+          <p>Not quite right? Try another drafting method and re-draft with the same measurements.</p>
+          <div class="tool-group method">
+            <label for="method-select">Method</label>
+            <select id="method-select"></select>
+            <button type="button" class="btn btn-ghost btn-sm" id="redraft-btn"><span class="btn-label">Re-draft</span><span class="btn-spinner" aria-hidden="true"></span></button>
+          </div>
+        </div>
+
+        <aside class="print-tip">
+          <div class="print-tip-badge">🖨️</div>
+          <div>
+            <h3>Print at 100% scale</h3>
+            <ol>
+              <li>Press <strong>Print pattern</strong> (or open the downloaded SVG in your browser).</li>
+              <li>In the print dialog choose <strong>Scale: 100%</strong> and turn off “Fit to page”.</li>
+              <li>Pick a paper size that fits (see “Real size” above), or print on several sheets and tape them together.</li>
+              <li>Measure a printed dimension arrow with a ruler to confirm the scale.</li>
+            </ol>
+          </div>
+        </aside>
+      </section>
+
+      <!-- HOW IT WORKS -->
+      <section class="extras">
+        <details class="how card" id="how">
+          <summary><span>How it works</span><span class="chev" aria-hidden="true"></span></summary>
+          <div class="how-body">
+            <div class="how-flow">
+              <div><b>1</b><span>Photo</span></div><i></i>
+              <div><b>2</b><span>AI reads the garment</span></div><i></i>
+              <div><b>3</b><span>Your measurements</span></div><i></i>
+              <div><b>4</b><span>Pattern drafted</span></div><i></i>
+              <div><b>5</b><span>Printable SVG</span></div>
+            </div>
+            <p>Pattern Pilot keeps <strong>seeing</strong> and <strong>sewing</strong> separate. First, an AI model looks at your photo and predicts details such as garment type, silhouette, neckline and sleeve length. Those predictions are only a starting point, so you can correct them.</p>
+            <p>Then a mathematical drafting engine, based on Winifred Aldrich’s pattern-drafting method, combines your choices with your body measurements to calculate the exact shape of each pattern piece. The result is drawn as an SVG with stitching lines, cutting lines, notches and grainlines.</p>
+            <p class="muted">Because of that split, a surprising pattern can come from a wrong prediction, a measurement typo, or the drafting step. Reviewing steps 2 and 3 carefully gives the best result.</p>
+          </div>
+        </details>
+
+        <footer class="site-foot">Made with 🧵 and care · Pattern Pilot</footer>
+      </section>
+    </div>
+  </main>
+</div>
+
+<div class="toast-region" id="toasts" aria-live="polite"></div>
+
+<!-- Optional animation libraries (site works without them) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.18/dist/lenis.min.js" defer></script>
+
+<script src="{{ url_for('static', filename='js/flow-bg.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/liquid-logo.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/mock-pattern.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/api.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+</body>
+</html>

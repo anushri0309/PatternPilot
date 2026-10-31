@@ -397,7 +397,8 @@ class PatternGenerator:
         PAGE_H = 2480  # A3 height in pixels at 300dpi
         SCALE = 8      # 1cm = 8px (adjusts layout to fit the larger page)
 
-        dwg = svgwrite.Drawing(output_path, size=(f'{PAGE_W}px', f'{PAGE_H}px'))
+        # Remove the fixed px size so the UI can scale it properly
+        dwg = svgwrite.Drawing(output_path, viewBox=f"0 0 {PAGE_W} {PAGE_H}")
 
         # Title
         dwg.add(dwg.text(
