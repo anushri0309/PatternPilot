@@ -3,7 +3,7 @@
 
   const CONFIG = {
     USE_MOCK: false,
-    BASE_URL: 'http://127.0.0.1:5000/api',
+    BASE_URL: '/api',
     FEATURES: { methodSelector: false },
     FORCE_ERROR: false,
   };
@@ -30,6 +30,9 @@
 
   const real = {
     login: (email, password) => jsonPost('/auth/login', { email, password }),
+    // --- ADD THIS LINE ---
+    register: (name, email, password) => jsonPost('/auth/register', { name, email, password }),
+    // ---------------------
     logout: () => jsonPost('/auth/logout', {}),
 
     async analyzeGarment(file) {

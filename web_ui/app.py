@@ -38,6 +38,11 @@ def api_auth_login():
         return jsonify({"name": "Demo User"})
     return jsonify({"message": "Invalid credentials"}), 401
 
+@app.route('/api/auth/register', methods=['POST'])
+def api_auth_register():
+    data = request.json
+    session['authenticated'] = True
+    return jsonify({"name": data.get('name', 'New User')})
 
 @app.route('/api/auth/logout', methods=['POST'])
 def api_auth_logout():
