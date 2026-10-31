@@ -1,0 +1,13 @@
+flask
+gunicorn
+torch
+torchvision
+xgboost
+scikit-learn
+pandas
+numpy
+opencv-python
+pillow
+svgwrite
+openpyxl
+matplotlib
