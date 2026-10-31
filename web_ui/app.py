@@ -13,7 +13,7 @@ from src.attribute_schema import build_garment_spec
 from src.pattern_generator import PatternGenerator
 
 app = Flask(__name__)
-app.secret_key = "pattern_pilot_secret"
+app.secret_key = os.environ.get("SECRET_KEY", "pattern_pilot_secret")
 
 
 # --- HTML ROUTES ---
